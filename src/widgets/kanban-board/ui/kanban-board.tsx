@@ -7,6 +7,7 @@ import { KanbanColumn } from "@/entities/column";
 export function KanbanBoard() {
   const columns = useKanbanStore((state) => state.columns);
   const cards = useKanbanStore((state) => state.cards);
+  const hasHydrated = useKanbanStore((state) => state.hasHydrated);
   const cardsList = Object.values(cards);
   const {
     handleDragStart,
@@ -30,6 +31,7 @@ export function KanbanBoard() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onCardHover={handleCardHover}
+          hasHydrated={hasHydrated}
         />
       ))}
     </div>

@@ -35,9 +35,9 @@ export function KanbanCardItem({
     >
       <CardHeader>
         <CardTitle>{card.title}</CardTitle>
-        {card.description && (
-          <CardDescription>{card.description}</CardDescription>
-        )}
+        <CardDescription>
+          {card.description?.trim() ? card.description : "내용 없음"}
+        </CardDescription>
       </CardHeader>
     </ShadcnCard>
   );

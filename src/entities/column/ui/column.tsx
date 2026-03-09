@@ -15,6 +15,7 @@ interface KanbanColumnProps {
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, columnId: string, index?: number) => void;
   onCardHover: (e: React.DragEvent, columnId: string, index: number) => void;
+  hasHydrated: boolean;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export function KanbanColumn({
   onDragLeave,
   onDrop,
   onCardHover,
+  hasHydrated,
   className,
 }: KanbanColumnProps) {
   const count = column.cardIds.length;
@@ -99,11 +101,24 @@ export function KanbanColumn({
       >
         <h3 className="text-sm font-semibold">{column.title}</h3>
         <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs font-medium">
-          {count}
+          {hasHydrated ? count : "-"}
         </span>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 pr-2">
-        {column.cardIds.map((cardId, index) => {
+        {!hasHydrated && (
+          <>
+            <div className="h-20 animate-pulse rounded-md bg-muted/60" />
+            <div className="h-20 animate-pulse rounded-md bg-muted/50" />
+            <div className="h-20 animate-pulse rounded-md bg-muted/40" />
+          </>
+        )}
+        {hasHydrated && column.cardIds.length === 0 && (
+          <p className="p-3 text-sm text-muted-foreground">
+            내용 없음
+          </p>
+        )}
+        {hasHydrated &&
+          column.cardIds.map((cardId, index) => {
           const card = cards.find((c) => c.id === cardId);
           if (!card) return null;
           return (

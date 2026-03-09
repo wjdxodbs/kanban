@@ -15,6 +15,7 @@ export function AddCardButton({ className }: AddCardButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const addCard = useKanbanStore((state) => state.addCard);
   const columns = useKanbanStore((state) => state.columns);
   const todoColumn =
@@ -31,6 +32,7 @@ export function AddCardButton({ className }: AddCardButtonProps) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setTitle("");
+        setDescription("");
         setIsOpen(false);
       }
     };
@@ -40,16 +42,23 @@ export function AddCardButton({ className }: AddCardButtonProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = title.trim();
-    if (trimmed && todoColumn) {
-      addCard(todoColumn.id, trimmed);
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
+    if (trimmedTitle && todoColumn) {
+      addCard(
+        todoColumn.id,
+        trimmedTitle,
+        trimmedDescription.length > 0 ? trimmedDescription : undefined,
+      );
       setTitle("");
+      setDescription("");
       setIsOpen(false);
     }
   };
 
   const handleCancel = () => {
     setTitle("");
+    setDescription("");
     setIsOpen(false);
   };
 
@@ -57,7 +66,7 @@ export function AddCardButton({ className }: AddCardButtonProps) {
     <>
       <Button
         variant="outline"
-        size="sm"
+        size="lg"
         className={className}
         disabled={!todoColumn}
         onClick={() => setIsOpen(true)}
@@ -89,6 +98,12 @@ export function AddCardButton({ className }: AddCardButtonProps) {
                   placeholder="할 일 제목을 입력하세요"
                   className="mb-3"
                   autoFocus
+                />
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="할 일 내용을 입력하세요 (선택)"
+                  className="mb-4 min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
                 />
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="ghost" onClick={handleCancel}>
