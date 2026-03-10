@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Layers } from "lucide-react";
 import { useKanbanStore } from "@/shared/store/kanban-store";
-import { KanbanCardItem } from "@/entities/card/ui/card";
-import { EditCardDialog } from "@/features/edit-card";
 import { cn } from "@/shared/lib/utils";
 import { useShallow } from "zustand/react/shallow";
+import { SortableCard } from "./sortable-card";
 
 interface KanbanColumnProps {
   columnId: string;
@@ -37,7 +34,7 @@ export function KanbanColumn({
         orderedCardIds,
         count: orderedCardIds.length,
       };
-    })
+    }),
   );
   const { setNodeRef, isOver } = useDroppable({ id: `column-${columnId}` });
 
@@ -46,7 +43,8 @@ export function KanbanColumn({
   const { title, color, orderedCardIds, count } = columnView;
 
   // Mini progress bar — fraction of total cards in this column
-  const miniPct = totalCardCount > 0 ? Math.round((count / totalCardCount) * 100) : 0;
+  const miniPct =
+    totalCardCount > 0 ? Math.round((count / totalCardCount) * 100) : 0;
   const indicatorColor = color ?? "var(--muted-foreground)";
 
   return (
@@ -55,7 +53,7 @@ export function KanbanColumn({
       aria-live="polite"
       className={cn(
         "flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/20 transition-shadow",
-        className
+        className,
       )}
     >
       {/* Column header */}
@@ -95,7 +93,7 @@ export function KanbanColumn({
         ref={setNodeRef}
         className={cn(
           "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 pr-2 transition-colors",
-          isOver && "bg-primary/5"
+          isOver && "bg-primary/5",
         )}
       >
         {!hasHydrated && (
@@ -112,7 +110,7 @@ export function KanbanColumn({
             <p className="text-xs leading-relaxed">
               카드가 없습니다
               <br />
-              드래그하거나 카드를 추가해 보세요
+              드래그해 이곳으로 옮겨 보세요
             </p>
           </div>
         )}
@@ -133,56 +131,5 @@ export function KanbanColumn({
         )}
       </div>
     </section>
-  );
-}
-
-function SortableCard({
-  cardId,
-  isActive,
-}: {
-  cardId: string;
-  isActive: boolean;
-}) {
-  const deleteCard = useKanbanStore((state) => state.deleteCard);
-  const card = useKanbanStore((state) => state.cards[cardId]);
-  const [editOpen, setEditOpen] = useState(false);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: cardId,
-    transition: { duration: 180, easing: "ease" },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  if (!card) return null;
-
-  return (
-    <>
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="relative will-change-transform touch-pan-y cursor-grab active:cursor-grabbing"
-        {...listeners}
-        {...attributes}
-      >
-        <KanbanCardItem
-          card={card}
-          className={cn((isDragging || isActive) && "opacity-0")}
-          onEdit={() => setEditOpen(true)}
-          onDelete={() => deleteCard(cardId)}
-        />
-      </div>
-      <EditCardDialog card={card} open={editOpen} onOpenChange={setEditOpen} />
-    </>
   );
 }
