@@ -1,1 +1,1 @@
-export { AddColumnButton } from "./ui/add-column-button";
+// Feature removed — 3 fixed columns only.

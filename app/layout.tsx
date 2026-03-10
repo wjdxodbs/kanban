@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kanban",
-  description: "Kanban board",
+  title: "칸반 보드",
+  description: "할 일, 진행 중, 완료를 한눈에 관리하는 칸반 보드",
 };
 
 export default function RootLayout({

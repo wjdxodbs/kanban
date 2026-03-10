@@ -2,17 +2,29 @@
 
 import { AddCardButton } from "@/features/add-card";
 import { KanbanBoard } from "@/widgets/kanban-board";
+import { BoardProgressStrip } from "@/widgets/board-progress";
 
 export function KanbanPage() {
   return (
-    <main className="min-h-screen px-4 py-6">
-      <section className="mx-auto flex h-[calc(100vh-3rem)] w-full max-w-6xl flex-col">
-        <h1 className="text-2xl font-bold text-foreground">칸반 보드</h1>
-        <AddCardButton className="mt-3 mb-4 self-start" />
-        <div className="min-h-0 flex-1">
-          <KanbanBoard />
+    <main className="flex h-screen flex-col overflow-hidden bg-background">
+      {/* Top header */}
+      <header className="flex items-center justify-between border-b px-6 py-3 shrink-0">
+        <div>
+          <h1 className="text-base font-semibold leading-tight">칸반 보드</h1>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            3개 컬럼 · To Do → In Progress → Done
+          </p>
         </div>
-      </section>
+        <AddCardButton />
+      </header>
+
+      {/* Progress strip */}
+      <BoardProgressStrip />
+
+      {/* Board */}
+      <div className="min-h-0 flex-1 overflow-hidden p-4">
+        <KanbanBoard />
+      </div>
     </main>
   );
 }
