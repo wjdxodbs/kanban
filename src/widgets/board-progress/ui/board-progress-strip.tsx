@@ -16,7 +16,7 @@ export function BoardProgressStrip() {
   return (
     <div
       aria-label="보드 진행 현황"
-      className="flex items-center gap-4 border-b px-6 py-2 text-xs text-muted-foreground shrink-0"
+      className="flex items-center gap-4 border-b px-6 py-4 text-xs text-muted-foreground shrink-0"
     >
       {columns.map((col) => (
         <div key={col.id} className="flex items-center gap-1.5">
@@ -38,7 +38,9 @@ export function BoardProgressStrip() {
             style={{ width: `${pct}%`, background: doneColor }}
           />
         </div>
-        <span className="tabular-nums shrink-0">{hasHydrated ? `${pct}% 완료` : "—"}</span>
+        <span className="tabular-nums shrink-0">
+          {hasHydrated ? `${pct}% 완료` : "—"}
+        </span>
       </div>
     </div>
   );
