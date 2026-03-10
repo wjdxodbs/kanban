@@ -31,7 +31,7 @@ export function EditCardDialog({ card, open, onOpenChange }: EditCardDialogProps
       setTitle(card.title);
       setDescription(card.description ?? "");
     }
-  }, [open, card]);
+  }, [open, card.id, card.title, card.description]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

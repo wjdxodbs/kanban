@@ -1,20 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Layers } from "lucide-react";
-import type { Column as KanbanColumn } from "@/shared/store/kanban-store";
-import type { Card as KanbanCard } from "@/shared/store/kanban-store";
 import { useKanbanStore } from "@/shared/store/kanban-store";
 import { KanbanCardItem } from "@/entities/card/ui/card";
 import { EditCardDialog } from "@/features/edit-card";
 import { cn } from "@/shared/lib/utils";
+import { useShallow } from "zustand/react/shallow";
 
 interface KanbanColumnProps {
-  column: KanbanColumn;
-  cards: KanbanCard[];
+  columnId: string;
   hasHydrated: boolean;
   activeCardId: string | null;
   totalCardCount: number;
@@ -22,31 +20,38 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({
-  column,
-  cards,
+  columnId,
   hasHydrated,
   activeCardId,
   totalCardCount,
   className,
 }: KanbanColumnProps) {
-  const count = column.cardIds.length;
-  const cardsInColumn = useMemo(
-    () =>
-      column.cardIds
-        .map((id) => cards.find((c) => c.id === id))
-        .filter(Boolean) as KanbanCard[],
-    [cards, column.cardIds]
+  const columnView = useKanbanStore(
+    useShallow((state) => {
+      const item = state.columns.find((entry) => entry.id === columnId);
+      if (!item) return null;
+      const orderedCardIds = item.cardIds;
+      return {
+        title: item.title,
+        color: item.color,
+        orderedCardIds,
+        count: orderedCardIds.length,
+      };
+    })
   );
+  const { setNodeRef, isOver } = useDroppable({ id: `column-${columnId}` });
 
-  const { setNodeRef, isOver } = useDroppable({ id: `column-${column.id}` });
+  if (!columnView) return null;
+
+  const { title, color, orderedCardIds, count } = columnView;
 
   // Mini progress bar — fraction of total cards in this column
   const miniPct = totalCardCount > 0 ? Math.round((count / totalCardCount) * 100) : 0;
-  const indicatorColor = column.color ?? "var(--muted-foreground)";
+  const indicatorColor = color ?? "var(--muted-foreground)";
 
   return (
     <section
-      aria-label={`${column.title} 컬럼, ${hasHydrated ? count : 0}개 카드`}
+      aria-label={`${title} 컬럼, ${hasHydrated ? count : 0}개 카드`}
       aria-live="polite"
       className={cn(
         "flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/20 transition-shadow",
@@ -63,7 +68,7 @@ export function KanbanColumn({
               style={{ background: indicatorColor }}
               aria-hidden="true"
             />
-            <h3 className="text-sm font-semibold truncate">{column.title}</h3>
+            <h3 className="text-sm font-semibold truncate">{title}</h3>
             <span
               className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground"
               aria-label={`${hasHydrated ? count : 0}개 카드`}
@@ -101,7 +106,7 @@ export function KanbanColumn({
           </>
         )}
 
-        {hasHydrated && column.cardIds.length === 0 && (
+        {hasHydrated && orderedCardIds.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center text-muted-foreground">
             <Layers className="size-7 opacity-30" aria-hidden="true" />
             <p className="text-xs leading-relaxed">
@@ -114,14 +119,14 @@ export function KanbanColumn({
 
         {hasHydrated && (
           <SortableContext
-            items={column.cardIds}
+            items={orderedCardIds}
             strategy={verticalListSortingStrategy}
           >
-            {cardsInColumn.map((card) => (
+            {orderedCardIds.map((cardId) => (
               <SortableCard
-                key={card.id}
-                card={card}
-                isActive={card.id === activeCardId}
+                key={cardId}
+                cardId={cardId}
+                isActive={cardId === activeCardId}
               />
             ))}
           </SortableContext>
@@ -132,13 +137,14 @@ export function KanbanColumn({
 }
 
 function SortableCard({
-  card,
+  cardId,
   isActive,
 }: {
-  card: KanbanCard;
+  cardId: string;
   isActive: boolean;
 }) {
   const deleteCard = useKanbanStore((state) => state.deleteCard);
+  const card = useKanbanStore((state) => state.cards[cardId]);
   const [editOpen, setEditOpen] = useState(false);
 
   const {
@@ -149,7 +155,7 @@ function SortableCard({
     transition,
     isDragging,
   } = useSortable({
-    id: card.id,
+    id: cardId,
     transition: { duration: 180, easing: "ease" },
   });
 
@@ -158,12 +164,14 @@ function SortableCard({
     transition,
   };
 
+  if (!card) return null;
+
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        className="relative will-change-transform touch-none cursor-grab active:cursor-grabbing"
+        className="relative will-change-transform touch-pan-y cursor-grab active:cursor-grabbing"
         {...listeners}
         {...attributes}
       >
@@ -171,7 +179,7 @@ function SortableCard({
           card={card}
           className={cn((isDragging || isActive) && "opacity-0")}
           onEdit={() => setEditOpen(true)}
-          onDelete={() => deleteCard(card.id)}
+          onDelete={() => deleteCard(cardId)}
         />
       </div>
       <EditCardDialog card={card} open={editOpen} onOpenChange={setEditOpen} />
