@@ -13,8 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "칸반 보드",
-  description: "할 일, 진행 중, 완료를 한눈에 관리하는 칸반 보드",
+  title: {
+    default: "칸반 보드",
+    template: "%s | 칸반 보드",
+  },
+  description: "할 일, 진행 중, 완료를 한눈에 관리하는 개인용 칸반 보드",
+  applicationName: "칸반 보드",
+  keywords: ["칸반", "할 일 관리", "업무 관리", "To Do", "Kanban"],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "칸반 보드",
+    description: "할 일, 진행 중, 완료를 한눈에 관리하는 개인용 칸반 보드",
+    type: "website",
+    locale: "ko_KR",
+  },
+  twitter: {
+    card: "summary",
+    title: "칸반 보드",
+    description: "할 일, 진행 중, 완료를 한눈에 관리하는 개인용 칸반 보드",
+  },
 };
 
 export default function RootLayout({

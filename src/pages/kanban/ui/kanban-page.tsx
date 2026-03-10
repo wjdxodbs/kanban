@@ -1,12 +1,13 @@
-"use client";
-
 import { AddCardButton } from "@/features/add-card";
 import { KanbanBoard } from "@/widgets/kanban-board";
-import { BoardProgressStrip } from "@/widgets/board-progress";
+import { BoardProgressContainer } from "@/widgets/board-progress";
 
 export function KanbanPage() {
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-background">
+    <main
+      id="main-content"
+      className="flex h-screen flex-col overflow-hidden bg-background"
+    >
       {/* Top header */}
       <header className="flex items-center justify-between border-b px-6 py-3 shrink-0">
         <div>
@@ -16,12 +17,15 @@ export function KanbanPage() {
       </header>
 
       {/* Progress strip */}
-      <BoardProgressStrip />
+      <BoardProgressContainer />
 
       {/* Board */}
-      <div className="min-h-0 flex-1 overflow-hidden p-4">
+      <section
+        aria-label="칸반 작업 영역"
+        className="min-h-0 flex-1 overflow-hidden p-4"
+      >
         <KanbanBoard />
-      </div>
+      </section>
     </main>
   );
 }
