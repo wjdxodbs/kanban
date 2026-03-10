@@ -1,1 +1,1 @@
-export { BoardProgressStrip } from "./ui/board-progress-strip";
+export { BoardProgressContainer } from "./ui/board-progress-container";

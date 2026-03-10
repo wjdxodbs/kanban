@@ -50,7 +50,12 @@ export function AddCardButton({ className }: AddCardButtonProps) {
 
   return (
     <>
-      <Button size="lg" className={className} onClick={() => setOpen(true)}>
+      <Button
+        size="lg"
+        className={className}
+        onClick={() => setOpen(true)}
+        aria-label="새 카드 추가"
+      >
         <Plus className="size-3.5" />
         카드 추가
       </Button>
