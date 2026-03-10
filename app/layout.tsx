@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { RegisterServiceWorker } from "@/shared/pwa/register-sw";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
   },
   description: "할 일, 진행 중, 완료를 한눈에 관리하는 개인용 칸반 보드",
   applicationName: "칸반 보드",
+  manifest: "/manifest.webmanifest",
   keywords: ["칸반", "할 일 관리", "업무 관리", "To Do", "Kanban"],
   robots: {
     index: true,
@@ -47,6 +49,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <RegisterServiceWorker />
         {children}
       </body>
     </html>
