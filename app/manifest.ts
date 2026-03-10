@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "칸반 보드",
     short_name: "칸반",
     description: "할 일, 진행 중, 완료를 한눈에 관리하는 개인용 칸반 보드",
@@ -30,6 +31,19 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+      },
+    ],
+    screenshots: [
+      {
+        src: "/screenshots/kanban-desktop.svg",
+        sizes: "1280x720",
+        type: "image/svg+xml",
+        form_factor: "wide",
+      },
+      {
+        src: "/screenshots/kanban-mobile.svg",
+        sizes: "390x844",
+        type: "image/svg+xml",
       },
     ],
   };

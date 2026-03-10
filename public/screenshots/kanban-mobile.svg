@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <rect width="390" height="844" fill="#0f1115"/>
+  <rect x="0" y="0" width="390" height="74" fill="#141821"/>
+  <text x="22" y="46" fill="#f3f4f6" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">KANBAN BOARD</text>
+
+  <rect x="16" y="98" width="358" height="220" rx="14" fill="#151c27" stroke="#273244"/>
+  <text x="32" y="128" fill="#93c5fd" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">To Do</text>
+  <rect x="32" y="146" width="326" height="64" rx="10" fill="#1f2937"/>
+  <rect x="32" y="220" width="326" height="64" rx="10" fill="#1f2937"/>
+
+  <rect x="16" y="334" width="358" height="220" rx="14" fill="#191b15" stroke="#3b3a2a"/>
+  <text x="32" y="364" fill="#fcd34d" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">In Progress</text>
+  <rect x="32" y="382" width="326" height="64" rx="10" fill="#2d2a1b"/>
+  <rect x="32" y="456" width="326" height="64" rx="10" fill="#2d2a1b"/>
+
+  <rect x="16" y="570" width="358" height="220" rx="14" fill="#131f1b" stroke="#204235"/>
+  <text x="32" y="600" fill="#6ee7b7" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Done</text>
+  <rect x="32" y="618" width="326" height="64" rx="10" fill="#183126"/>
+</svg>
