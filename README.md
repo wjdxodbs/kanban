@@ -70,24 +70,28 @@ pnpm start
 
 ```text
 kanban/
-├─ app/                                # App Router 엔트리
+├─ app/                                # Next 라우팅 엔트리(얇은 레이어)
 │  ├─ layout.tsx                       # 전역 레이아웃 + metadata + SW 등록
-│  ├─ page.tsx                         # 루트 페이지(kanban page re-export)
-│  ├─ globals.css                      # 전역 스타일(드래그 커서 포함)
+│  ├─ page.tsx                         # 루트 페이지 엔트리(kanban re-export)
+│  ├─ globals.css                      # 전역 스타일(토큰, 커서 등)
 │  ├─ manifest.ts                      # PWA 매니페스트
 │  ├─ robots.ts                        # robots.txt 생성
 │  ├─ sitemap.ts                       # sitemap.xml 생성
 │  └─ offline/
-│     └─ page.tsx                      # 오프라인 fallback 페이지
+│     └─ page.tsx                      # 오프라인 페이지 엔트리(re-export)
 │
 ├─ src/
-│  ├─ pages/
+│  ├─ pages/                           # 페이지 조합/엔트리 레이어
 │  │  └─ kanban/
 │  │     ├─ index.ts                   # 페이지 배럴 export
 │  │     └─ ui/
 │  │        └─ kanban-page.tsx         # 화면 레이아웃(헤더/보드/진행바)
+│  │  └─ offline/
+│  │     ├─ index.ts
+│  │     └─ ui/
+│  │        └─ offline-page.tsx        # 오프라인 상태 UI/복구 흐름
 │  │
-│  ├─ widgets/
+│  ├─ widgets/                         # 여러 feature/entity를 묶는 화면 블록
 │  │  ├─ kanban-board/
 │  │  │  ├─ index.ts
 │  │  │  └─ ui/
@@ -97,7 +101,7 @@ kanban/
 │  │     └─ ui/
 │  │        └─ board-progress-container.tsx  # 컬럼 카운트/진행률 표시
 │  │
-│  ├─ features/
+│  ├─ features/                        # 사용자 액션 단위 기능(추가/수정 등)
 │  │  ├─ add-card/
 │  │  │  ├─ index.ts
 │  │  │  └─ ui/
@@ -107,16 +111,17 @@ kanban/
 │  │     └─ ui/
 │  │        └─ edit-card-dialog.tsx    # 카드 수정 다이얼로그
 │  │
-│  ├─ entities/
+│  ├─ entities/                        # 도메인 단위 최소 표현(카드/컬럼)
 │  │  ├─ card/
 │  │  │  └─ ui/
 │  │  │     └─ card.tsx                # 카드 프리젠테이션(UI, 액션 버튼)
 │  │  └─ column/
 │  │     ├─ index.ts
 │  │     └─ ui/
-│  │        └─ column.tsx              # 컬럼 UI + sortable 카드 리스트
+│  │        ├─ column.tsx              # 컬럼 컨테이너/헤더/빈 상태
+│  │        └─ sortable-card.tsx       # 정렬 가능한 카드 아이템 UI
 │  │
-│  └─ shared/
+│  └─ shared/                          # 공통 인프라/유틸/디자인시스템
 │     ├─ store/
 │     │  └─ kanban-store.ts            # Zustand 상태/액션/persist/일일 초기화
 │     ├─ pwa/
@@ -135,15 +140,21 @@ kanban/
 │  ├─ sw.js                            # 서비스워커 스크립트
 │  ├─ icon-192.png                     # PWA 아이콘
 │  ├─ icon-512.png                     # PWA 아이콘
-│  └─ icon-512-maskable.png            # PWA maskable 아이콘
+│  ├─ icon-512-maskable.png            # PWA maskable 아이콘
+│  └─ screenshots/                     # PWA 스토어/설치 미리보기 이미지
+│     ├─ kanban-desktop.svg
+│     └─ kanban-mobile.svg
 │
 ├─ next.config.ts                      # Next 설정(React Compiler 등)
 ├─ tsconfig.json                       # TypeScript 설정
 └─ package.json                        # 스크립트/의존성
 ```
 
-### 아키텍처 메모
+### FSD 레이어 역할 요약
 
-- `app/`는 Next.js 라우팅/메타데이터/PWA 진입점만 담당합니다.
-- 실제 도메인 UI와 상태 로직은 `src/`의 FSD 레이어(`pages/widgets/features/entities/shared`)에 분리되어 있습니다.
-- 전역 상태는 `shared/store/kanban-store.ts` 하나로 관리하며, UI는 selector 기반으로 필요한 값만 구독합니다.
+- `app`: Next.js 라우팅 규칙을 만족하는 얇은 엔트리 레이어
+- `pages`: 한 화면 단위 조립(엔트리 + 큰 레이아웃)
+- `widgets`: 화면에서 재사용되는 중간 크기 UI 블록
+- `features`: 사용자 시나리오/액션 중심 기능(추가, 수정 등)
+- `entities`: 도메인 최소 단위 표현(카드, 컬럼)
+- `shared`: 앱 전역 공통 코드(UI 컴포넌트, 스토어, 유틸)
