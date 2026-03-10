@@ -7,20 +7,24 @@ export interface Card {
   title: string;
   description?: string;
   columnId: string;
+  cardNumber: number;
 }
 
 export interface Column {
   id: string;
   title: string;
   cardIds: string[];
+  color: string;
 }
 
 interface KanbanState {
   columns: Column[];
   cards: Record<string, Card>;
+  nextCardNumber: number;
   hasHydrated: boolean;
-  addColumn: (title: string) => void;
   addCard: (columnId: string, title: string, description?: string) => void;
+  deleteCard: (cardId: string) => void;
+  updateCard: (cardId: string, title: string, description?: string) => void;
   moveCard: (cardId: string, targetColumnId: string, targetIndex?: number) => void;
   reorderCards: (columnId: string, fromIndex: number, toIndex: number) => void;
   setHasHydrated: (value: boolean) => void;
@@ -28,11 +32,12 @@ interface KanbanState {
 
 const initialState = {
   columns: [
-    { id: "col-1", title: "To Do", cardIds: [] },
-    { id: "col-2", title: "In Progress", cardIds: [] },
-    { id: "col-3", title: "Done", cardIds: [] },
+    { id: "col-1", title: "To Do", cardIds: [], color: "oklch(0.623 0.182 254)" },
+    { id: "col-2", title: "In Progress", cardIds: [], color: "oklch(0.714 0.165 68)" },
+    { id: "col-3", title: "Done", cardIds: [], color: "oklch(0.648 0.17 155)" },
   ] as Column[],
   cards: {} as Record<string, Card>,
+  nextCardNumber: 1,
 };
 
 export const useKanbanStore = create<KanbanState>()(
@@ -43,14 +48,6 @@ export const useKanbanStore = create<KanbanState>()(
 
       setHasHydrated: (value) => set({ hasHydrated: value }),
 
-      addColumn: (title) =>
-        set((state) => {
-          const id = nanoid();
-          return {
-            columns: [...state.columns, { id, title, cardIds: [] }],
-          };
-        }),
-
       addCard: (columnId, title, description) =>
         set((state) => {
           const id = nanoid();
@@ -59,11 +56,40 @@ export const useKanbanStore = create<KanbanState>()(
           return {
             cards: {
               ...state.cards,
-              [id]: { id, title, description, columnId },
+              [id]: { id, title, description, columnId, cardNumber: state.nextCardNumber },
             },
             columns: state.columns.map((c) =>
               c.id === columnId ? { ...c, cardIds: [...c.cardIds, id] } : c
             ),
+            nextCardNumber: state.nextCardNumber + 1,
+          };
+        }),
+
+      deleteCard: (cardId) =>
+        set((state) => {
+          const card = state.cards[cardId];
+          if (!card) return state;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [cardId]: _removed, ...remainingCards } = state.cards;
+          return {
+            cards: remainingCards,
+            columns: state.columns.map((c) =>
+              c.id === card.columnId
+                ? { ...c, cardIds: c.cardIds.filter((id) => id !== cardId) }
+                : c
+            ),
+          };
+        }),
+
+      updateCard: (cardId, title, description) =>
+        set((state) => {
+          const card = state.cards[cardId];
+          if (!card) return state;
+          return {
+            cards: {
+              ...state.cards,
+              [cardId]: { ...card, title, description },
+            },
           };
         }),
 
@@ -80,9 +106,7 @@ export const useKanbanStore = create<KanbanState>()(
             const rawToIndex =
               targetIndex !== undefined ? targetIndex : column.cardIds.length;
             let toIndex = rawToIndex;
-            if (fromIndex < toIndex) {
-              toIndex -= 1;
-            }
+            if (fromIndex < toIndex) toIndex -= 1;
             if (fromIndex === toIndex) return state;
             const newCardIds = [...column.cardIds];
             const [removed] = newCardIds.splice(fromIndex, 1);
@@ -96,14 +120,10 @@ export const useKanbanStore = create<KanbanState>()(
 
           const newColumns = state.columns.map((col) => {
             if (col.id === card.columnId) {
-              return {
-                ...col,
-                cardIds: col.cardIds.filter((id) => id !== cardId),
-              };
+              return { ...col, cardIds: col.cardIds.filter((id) => id !== cardId) };
             }
             if (col.id === targetColumnId) {
-              const index =
-                targetIndex !== undefined ? targetIndex : col.cardIds.length;
+              const index = targetIndex !== undefined ? targetIndex : col.cardIds.length;
               const inserted = [...col.cardIds];
               inserted.splice(index, 0, cardId);
               return { ...col, cardIds: inserted };
@@ -113,10 +133,7 @@ export const useKanbanStore = create<KanbanState>()(
 
           return {
             columns: newColumns,
-            cards: {
-              ...state.cards,
-              [cardId]: { ...card, columnId: targetColumnId },
-            },
+            cards: { ...state.cards, [cardId]: { ...card, columnId: targetColumnId } },
           };
         }),
 
@@ -124,11 +141,9 @@ export const useKanbanStore = create<KanbanState>()(
         set((state) => {
           const column = state.columns.find((c) => c.id === columnId);
           if (!column || fromIndex === toIndex) return state;
-
           const newCardIds = [...column.cardIds];
           const [removed] = newCardIds.splice(fromIndex, 1);
           newCardIds.splice(toIndex, 0, removed);
-
           return {
             columns: state.columns.map((c) =>
               c.id === columnId ? { ...c, cardIds: newCardIds } : c
@@ -138,9 +153,44 @@ export const useKanbanStore = create<KanbanState>()(
     }),
     {
       name: "kanban-storage",
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = persistedState as {
+          columns: Array<{ id: string; title: string; cardIds: string[]; color?: string }>;
+          cards: Record<string, { id: string; title: string; description?: string; columnId: string; cardNumber?: number }>;
+          nextCardNumber?: number;
+        };
+
+        if (version === 0) {
+          const colorMap: Record<string, string> = {
+            "col-1": "oklch(0.623 0.182 254)",
+            "col-2": "oklch(0.714 0.165 68)",
+            "col-3": "oklch(0.648 0.17 155)",
+          };
+          let nextNum = 1;
+          const migratedCards = Object.fromEntries(
+            Object.entries(state.cards).map(([id, card]) => [
+              id,
+              { ...card, cardNumber: card.cardNumber ?? nextNum++ },
+            ])
+          );
+          return {
+            ...state,
+            columns: state.columns.map((col) => ({
+              ...col,
+              color: colorMap[col.id] ?? "oklch(0.708 0 0)",
+            })),
+            cards: migratedCards,
+            nextCardNumber: nextNum,
+          };
+        }
+
+        return state;
+      },
       partialize: (state) => ({
         columns: state.columns,
         cards: state.cards,
+        nextCardNumber: state.nextCardNumber,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

@@ -1,160 +1,183 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useMemo, useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Layers } from "lucide-react";
 import type { Column as KanbanColumn } from "@/shared/store/kanban-store";
 import type { Card as KanbanCard } from "@/shared/store/kanban-store";
+import { useKanbanStore } from "@/shared/store/kanban-store";
 import { KanbanCardItem } from "@/entities/card/ui/card";
+import { EditCardDialog } from "@/features/edit-card";
 import { cn } from "@/shared/lib/utils";
 
 interface KanbanColumnProps {
   column: KanbanColumn;
   cards: KanbanCard[];
-  onDragStart: (e: React.DragEvent, cardId: string, columnId: string) => void;
-  onDragEnd: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, columnId: string, index?: number) => void;
-  onCardHover: (e: React.DragEvent, columnId: string, index: number) => void;
   hasHydrated: boolean;
+  activeCardId: string | null;
+  totalCardCount: number;
   className?: string;
-}
-
-function getHeaderColorClass(title: string) {
-  const normalized = title.toLowerCase();
-  if (normalized.includes("to do") || normalized.includes("할 일")) {
-    return "bg-blue-500/15 text-blue-200";
-  }
-  if (normalized.includes("progress") || normalized.includes("진행")) {
-    return "bg-amber-500/15 text-amber-200";
-  }
-  if (normalized.includes("done") || normalized.includes("완료")) {
-    return "bg-emerald-500/15 text-emerald-200";
-  }
-  return "bg-muted text-foreground";
 }
 
 export function KanbanColumn({
   column,
   cards,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onCardHover,
   hasHydrated,
+  activeCardId,
+  totalCardCount,
   className,
 }: KanbanColumnProps) {
   const count = column.cardIds.length;
-  const cardElementsRef = useRef<Record<string, HTMLDivElement | null>>({});
-  const previousTopRef = useRef<Record<string, number>>({});
+  const cardsInColumn = useMemo(
+    () =>
+      column.cardIds
+        .map((id) => cards.find((c) => c.id === id))
+        .filter(Boolean) as KanbanCard[],
+    [cards, column.cardIds]
+  );
 
-  useLayoutEffect(() => {
-    const nextTopMap: Record<string, number> = {};
+  const { setNodeRef, isOver } = useDroppable({ id: `column-${column.id}` });
 
-    for (const cardId of column.cardIds) {
-      const element = cardElementsRef.current[cardId];
-      if (!element) continue;
-
-      const currentTop = element.getBoundingClientRect().top;
-      nextTopMap[cardId] = currentTop;
-
-      const previousTop = previousTopRef.current[cardId];
-      if (previousTop === undefined) continue;
-
-      const deltaY = previousTop - currentTop;
-      if (deltaY === 0) continue;
-
-      element.style.transition = "none";
-      element.style.transform = `translateY(${deltaY}px)`;
-
-      requestAnimationFrame(() => {
-        element.style.transition = "transform 180ms ease";
-        element.style.transform = "translateY(0)";
-      });
-    }
-
-    previousTopRef.current = nextTopMap;
-  }, [column.cardIds]);
+  // Mini progress bar — fraction of total cards in this column
+  const miniPct = totalCardCount > 0 ? Math.round((count / totalCardCount) * 100) : 0;
+  const indicatorColor = column.color ?? "var(--muted-foreground)";
 
   return (
-    <div
+    <section
+      aria-label={`${column.title} 컬럼, ${hasHydrated ? count : 0}개 카드`}
+      aria-live="polite"
       className={cn(
-        "flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30 transition-shadow",
-        className,
+        "flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/20 transition-shadow",
+        className
       )}
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(e);
-      }}
-      onDragLeave={onDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop(e, column.id, column.cardIds.length);
-      }}
     >
+      {/* Column header */}
+      <div className="shrink-0 px-3 pt-3 pb-2 bg-muted/30">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Color indicator */}
+            <div
+              className="w-0.5 h-4 rounded-full shrink-0"
+              style={{ background: indicatorColor }}
+              aria-hidden="true"
+            />
+            <h3 className="text-sm font-semibold truncate">{column.title}</h3>
+            <span
+              className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground"
+              aria-label={`${hasHydrated ? count : 0}개 카드`}
+            >
+              {hasHydrated ? count : "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Mini progress bar */}
+        <div
+          className="h-0.5 rounded-full bg-border overflow-hidden"
+          aria-hidden="true"
+        >
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${miniPct}%`, background: indicatorColor }}
+          />
+        </div>
+      </div>
+
+      {/* Cards area */}
       <div
+        ref={setNodeRef}
         className={cn(
-          "flex items-center justify-between px-4 py-6",
-          getHeaderColorClass(column.title),
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 pr-2 transition-colors",
+          isOver && "bg-primary/5"
         )}
       >
-        <h3 className="text-sm font-semibold">{column.title}</h3>
-        <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs font-medium">
-          {hasHydrated ? count : "-"}
-        </span>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 pr-2">
         {!hasHydrated && (
           <>
-            <div className="h-20 animate-pulse rounded-md bg-muted/60" />
-            <div className="h-20 animate-pulse rounded-md bg-muted/50" />
-            <div className="h-20 animate-pulse rounded-md bg-muted/40" />
+            <div className="h-16 animate-pulse rounded-lg bg-muted/60" />
+            <div className="h-16 animate-pulse rounded-lg bg-muted/50" />
+            <div className="h-16 animate-pulse rounded-lg bg-muted/40" />
           </>
         )}
+
         {hasHydrated && column.cardIds.length === 0 && (
-          <p className="p-3 text-sm text-muted-foreground">
-            내용 없음
-          </p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center text-muted-foreground">
+            <Layers className="size-7 opacity-30" aria-hidden="true" />
+            <p className="text-xs leading-relaxed">
+              카드가 없습니다
+              <br />
+              드래그하거나 카드를 추가해 보세요
+            </p>
+          </div>
         )}
-        {hasHydrated &&
-          column.cardIds.map((cardId, index) => {
-          const card = cards.find((c) => c.id === cardId);
-          if (!card) return null;
-          return (
-            <div
-              key={card.id}
-              ref={(element) => {
-                cardElementsRef.current[card.id] = element;
-              }}
-              className="will-change-transform"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                const isLowerHalf = e.clientY > rect.top + rect.height / 2;
-                const targetIndex = isLowerHalf ? index + 1 : index;
-                onCardHover(e, column.id, targetIndex);
-              }}
-              onDragLeave={onDragLeave}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                const isLowerHalf = e.clientY > rect.top + rect.height / 2;
-                const targetIndex = isLowerHalf ? index + 1 : index;
-                onDrop(e, column.id, targetIndex);
-              }}
-            >
-              <KanbanCardItem
+
+        {hasHydrated && (
+          <SortableContext
+            items={column.cardIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {cardsInColumn.map((card) => (
+              <SortableCard
+                key={card.id}
                 card={card}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                isActive={card.id === activeCardId}
               />
-            </div>
-          );
-        })}
+            ))}
+          </SortableContext>
+        )}
       </div>
-    </div>
+    </section>
+  );
+}
+
+function SortableCard({
+  card,
+  isActive,
+}: {
+  card: KanbanCard;
+  isActive: boolean;
+}) {
+  const deleteCard = useKanbanStore((state) => state.deleteCard);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: card.id,
+    transition: { duration: 180, easing: "ease" },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <>
+      <div ref={setNodeRef} style={style} className="relative will-change-transform group/sortable">
+        {/* Drag handle — applied to the icon area only */}
+        <div
+          ref={setActivatorNodeRef}
+          {...listeners}
+          {...attributes}
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 touch-none cursor-grab active:cursor-grabbing opacity-0 group-hover/sortable:opacity-50 transition-opacity"
+          aria-label="드래그하여 이동"
+        />
+        <KanbanCardItem
+          card={card}
+          className={cn((isDragging || isActive) && "opacity-0")}
+          onEdit={() => setEditOpen(true)}
+          onDelete={() => deleteCard(card.id)}
+        />
+      </div>
+      <EditCardDialog card={card} open={editOpen} onOpenChange={setEditOpen} />
+    </>
   );
 }
