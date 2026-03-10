@@ -21,13 +21,14 @@ interface KanbanState {
   columns: Column[];
   cards: Record<string, Card>;
   nextCardNumber: number;
+  lastResetDate?: string;
   hasHydrated: boolean;
   addCard: (columnId: string, title: string, description?: string) => void;
   deleteCard: (cardId: string) => void;
   updateCard: (cardId: string, title: string, description?: string) => void;
   moveCard: (cardId: string, targetColumnId: string, targetIndex?: number) => void;
-  reorderCards: (columnId: string, fromIndex: number, toIndex: number) => void;
   setHasHydrated: (value: boolean) => void;
+  checkAndResetDaily: () => void;
 }
 
 const initialState = {
@@ -38,7 +39,35 @@ const initialState = {
   ] as Column[],
   cards: {} as Record<string, Card>,
   nextCardNumber: 1,
+  lastResetDate: undefined as string | undefined,
 };
+
+const TO_DO_COLUMN_ID = "col-1";
+const RESET_TIME_ZONE = process.env.NEXT_PUBLIC_RESET_TIME_ZONE ?? "Asia/Seoul";
+
+function getTodayKey(date = new Date(), timeZone = RESET_TIME_ZONE) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+
+    const year = parts.find((part) => part.type === "year")?.value;
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+
+    if (!year || !month || !day) {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    return `${year}-${month}-${day}`;
+  } catch {
+    // Invalid time zone or Intl failure fallback.
+    return new Date().toISOString().slice(0, 10);
+  }
+}
 
 export const useKanbanStore = create<KanbanState>()(
   persist(
@@ -47,6 +76,55 @@ export const useKanbanStore = create<KanbanState>()(
       hasHydrated: false,
 
       setHasHydrated: (value) => set({ hasHydrated: value }),
+
+      checkAndResetDaily: () =>
+        set((state) => {
+          const today = getTodayKey();
+
+          // First run (or migrated data without date): set baseline only.
+          if (!state.lastResetDate) {
+            return { lastResetDate: today };
+          }
+
+          if (state.lastResetDate === today) {
+            return state;
+          }
+
+          const todoColumn = state.columns.find((c) => c.id === TO_DO_COLUMN_ID);
+          if (!todoColumn) {
+            return { lastResetDate: today };
+          }
+
+          const movedCardIds = state.columns
+            .filter((c) => c.id !== TO_DO_COLUMN_ID)
+            .flatMap((c) => c.cardIds);
+
+          const nextColumns = state.columns.map((c) => {
+            if (c.id === TO_DO_COLUMN_ID) {
+              return {
+                ...c,
+                cardIds: [...c.cardIds, ...movedCardIds],
+              };
+            }
+            return { ...c, cardIds: [] };
+          });
+
+          const nextCards = { ...state.cards };
+          for (const cardId of movedCardIds) {
+            const card = nextCards[cardId];
+            if (!card) continue;
+            nextCards[cardId] = {
+              ...card,
+              columnId: TO_DO_COLUMN_ID,
+            };
+          }
+
+          return {
+            columns: nextColumns,
+            cards: nextCards,
+            lastResetDate: today,
+          };
+        }),
 
       addCard: (columnId, title, description) =>
         set((state) => {
@@ -137,19 +215,6 @@ export const useKanbanStore = create<KanbanState>()(
           };
         }),
 
-      reorderCards: (columnId, fromIndex, toIndex) =>
-        set((state) => {
-          const column = state.columns.find((c) => c.id === columnId);
-          if (!column || fromIndex === toIndex) return state;
-          const newCardIds = [...column.cardIds];
-          const [removed] = newCardIds.splice(fromIndex, 1);
-          newCardIds.splice(toIndex, 0, removed);
-          return {
-            columns: state.columns.map((c) =>
-              c.id === columnId ? { ...c, cardIds: newCardIds } : c
-            ),
-          };
-        }),
     }),
     {
       name: "kanban-storage",
@@ -159,6 +224,7 @@ export const useKanbanStore = create<KanbanState>()(
           columns: Array<{ id: string; title: string; cardIds: string[]; color?: string }>;
           cards: Record<string, { id: string; title: string; description?: string; columnId: string; cardNumber?: number }>;
           nextCardNumber?: number;
+          lastResetDate?: string;
         };
 
         if (version === 0) {
@@ -182,6 +248,7 @@ export const useKanbanStore = create<KanbanState>()(
             })),
             cards: migratedCards,
             nextCardNumber: nextNum,
+            lastResetDate: state.lastResetDate,
           };
         }
 
@@ -191,6 +258,7 @@ export const useKanbanStore = create<KanbanState>()(
         columns: state.columns,
         cards: state.cards,
         nextCardNumber: state.nextCardNumber,
+        lastResetDate: state.lastResetDate,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
