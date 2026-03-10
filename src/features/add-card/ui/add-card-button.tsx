@@ -50,7 +50,7 @@ export function AddCardButton({ className }: AddCardButtonProps) {
 
   return (
     <>
-      <Button size="sm" className={className} onClick={() => setOpen(true)}>
+      <Button size="lg" className={className} onClick={() => setOpen(true)}>
         <Plus className="size-3.5" />
         카드 추가
       </Button>
@@ -82,7 +82,11 @@ export function AddCardButton({ className }: AddCardButtonProps) {
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => handleOpenChange(false)}
+              >
                 취소
               </Button>
               <Button type="submit" disabled={!title.trim()}>

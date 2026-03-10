@@ -10,10 +10,7 @@ export function KanbanPage() {
       {/* Top header */}
       <header className="flex items-center justify-between border-b px-6 py-3 shrink-0">
         <div>
-          <h1 className="text-base font-semibold leading-tight">칸반 보드</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            3개 컬럼 · To Do → In Progress → Done
-          </p>
+          <h1 className="text-2xl font-semibold leading-tight">칸반 보드</h1>
         </div>
         <AddCardButton />
       </header>
