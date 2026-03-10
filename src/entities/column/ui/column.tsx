@@ -145,7 +145,6 @@ function SortableCard({
     attributes,
     listeners,
     setNodeRef,
-    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -161,15 +160,13 @@ function SortableCard({
 
   return (
     <>
-      <div ref={setNodeRef} style={style} className="relative will-change-transform group/sortable">
-        {/* Drag handle — applied to the icon area only */}
-        <div
-          ref={setActivatorNodeRef}
-          {...listeners}
-          {...attributes}
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 touch-none cursor-grab active:cursor-grabbing opacity-0 group-hover/sortable:opacity-50 transition-opacity"
-          aria-label="드래그하여 이동"
-        />
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="relative will-change-transform touch-none cursor-grab active:cursor-grabbing"
+        {...listeners}
+        {...attributes}
+      >
         <KanbanCardItem
           card={card}
           className={cn((isDragging || isActive) && "opacity-0")}
